@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Substitution &amp; Elimination Trainer</title>
+<style>
+:root{
+  --bg:#f4f2ec; --card:#fffdf8; --ink:#1f2a37; --muted:#6b7280; --line:#e4e0d5; --soft:#f0ede4;
+  --accent:#3a6ea5; --accent-soft:#e5edf7; --good:#2f855a; --good-soft:#e2f3e9; --bad:#c0392b; --bad-soft:#fbe6e2; --warn:#c27c0e;
+  --shadow:0 1px 2px rgba(30,30,20,.04),0 6px 24px rgba(30,30,20,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#13161b; --card:#1b1f26; --ink:#e5e8ec; --muted:#9aa3ae; --line:#2b313a; --soft:#222730;
+    --accent:#7aa7e0; --accent-soft:#1f2d40; --good:#5cc28a; --good-soft:#18301f; --bad:#ef7b6c; --bad-soft:#3a1f1c; --warn:#e3a33d;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13161b; --card:#1b1f26; --ink:#e5e8ec; --muted:#9aa3ae; --line:#2b313a; --soft:#222730;
+  --accent:#7aa7e0; --accent-soft:#1f2d40; --good:#5cc28a; --good-soft:#18301f; --bad:#ef7b6c; --bad-soft:#3a1f1c; --warn:#e3a33d;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:clamp(13px,1.7vh,16px);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+#app{height:100vh;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr)}
+/* top bar */
+.top{display:flex;align-items:center;gap:14px;padding:12px 16px}
+.brand{font-weight:700;letter-spacing:.2px;font-size:1.05rem;white-space:nowrap}
+.brand b{color:var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:.78rem;padding:4px 10px;border-radius:99px;background:var(--soft);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.spacer{flex:1}
+.stats{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--muted);white-space:nowrap}
+.stats strong{color:var(--ink);font-variant-numeric:tabular-nums}
+.timer{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink);padding:3px 10px;border-radius:99px;background:var(--soft);border:1px solid var(--line)}
+.timer.low{color:var(--warn)} .timer.crit{color:var(--bad)}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:6px 12px;cursor:pointer;color:var(--muted)}
+.ghost:hover{color:var(--ink);border-color:var(--muted)}
+/* main */
+main{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;padding:0 16px 16px;min-height:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);min-height:0;overflow:hidden;position:relative}
+.stage{display:flex;flex-direction:column;padding:18px 20px}
+.tbar{position:absolute;left:0;right:0;top:0;height:4px;background:transparent}
+.tbar i{display:block;height:100%;width:100%;background:var(--accent);transition:width 1s linear,background .3s}
+.qmeta{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem}
+.rxn{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:clamp(8px,2vw,28px)}
+.molbox{display:flex;align-items:center;justify-content:center;min-width:0;max-height:100%}
+.molbox svg{max-width:100%;max-height:34vh;height:auto}
+.arrow{display:flex;flex-direction:column;align-items:center;min-width:150px;max-width:230px;flex:0 1 210px}
+.arrow .above,.arrow .below{font-size:1.05rem;text-align:center;line-height:1.3;min-height:1.3em}
+.arrow .above{font-weight:600}
+.arrow .below{color:var(--muted)}
+.arrow svg{width:100%;height:16px;margin:4px 0}
+.prodbox{min-width:90px;min-height:90px;border:2px dashed var(--line);border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.8rem;padding:6px}
+.prodbox.filled{border-style:solid;border-color:var(--good);color:var(--ink)}
+.prodbox svg{max-height:26vh;max-width:24vw;height:auto}
+.subname{text-align:center;color:var(--muted);font-size:.92rem;margin-top:2px}
+.hints{display:flex;flex-direction:column;gap:6px;margin-top:10px;min-height:0}
+.hint{background:var(--accent-soft);border-radius:10px;padding:8px 12px;font-size:.9rem;line-height:1.35;animation:fade .25s ease}
+.hint b{color:var(--accent)}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* answer panel */
+.panel{display:flex;flex-direction:column;padding:18px 20px;gap:12px}
+.steph .k{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.steph h2{margin:2px 0 0;font-size:1.2rem;font-weight:650}
+.steph p{margin:3px 0 0;color:var(--muted);font-size:.88rem}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opts.one{grid-template-columns:1fr}
+.opt{border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:clamp(8px,1.3vh,13px) 14px;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center;transition:border-color .15s,background .15s,transform .05s;line-height:1.3}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:active:not(:disabled){transform:scale(.99)}
+.opt:disabled{cursor:default}
+.opt .n{flex:none;width:22px;height:22px;border-radius:6px;background:var(--soft);color:var(--muted);font-size:.75rem;display:grid;place-items:center;font-weight:600}
+.opt .t{font-weight:650;font-size:1.08rem}
+.opt .d{display:block;font-size:.76rem;color:var(--muted);font-weight:400}
+.opt.wide{grid-column:1/-1}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt.sel .n{background:var(--accent);color:#fff}
+.opt.ok{border-color:var(--good);background:var(--good-soft)}
+.opt.no{border-color:var(--bad);background:var(--bad-soft)}
+.opt.miss{border-color:var(--good);border-style:dashed}
+.opt.txt .t{font-weight:500;font-size:.93rem}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;min-height:0;grid-auto-rows:minmax(0,1fr);max-height:52vh}
+.tile{border:1.5px solid var(--line);background:var(--card);border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;position:relative;min-height:0;overflow:hidden}
+.tile:hover:not(:disabled){border-color:var(--accent)}
+.tile svg{max-width:100%;max-height:100%;height:auto;min-width:0}
+.tile .plus{color:var(--muted);font-size:1.2rem}
+.tile .n{position:absolute;top:6px;left:8px;font-size:.72rem;color:var(--muted);font-weight:600}
+.tile.ok{border-color:var(--good);background:var(--good-soft)}
+.tile.no{border-color:var(--bad);background:var(--bad-soft)}
+.actions{display:flex;gap:10px;align-items:center}
+.primary{background:var(--accent);color:#fff;border:0;border-radius:12px;padding:10px 18px;font-weight:600;cursor:pointer}
+.primary:disabled{opacity:.45;cursor:default}
+.secondary{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer}
+.secondary:disabled{opacity:.45;cursor:default}
+.kbd{font-size:.72rem;color:var(--muted);margin-left:auto}
+.fb{flex:1;min-height:0;overflow:auto;scrollbar-width:none;display:flex;flex-direction:column;gap:8px}
+.fb::-webkit-scrollbar{display:none}
+.verdict{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.verdict .v{font-weight:700;font-size:1.05rem}
+.verdict.good .v{color:var(--good)} .verdict.bad .v{color:var(--bad)}
+.verdict .a{font-size:.95rem}
+.verdict em{font-style:normal;color:var(--muted)}
+.overall{font-size:.85rem;color:var(--muted)}
+.why{margin:0;padding-left:18px;font-size:.9rem;line-height:1.4}
+.why li{margin:2px 0}
+.concl{border-left:3px solid var(--accent);padding:4px 10px;font-size:.9rem;background:var(--soft);border-radius:0 8px 8px 0;line-height:1.4}
+.whynot{font-size:.86rem;line-height:1.4}
+.whynot summary{cursor:pointer;color:var(--accent);font-weight:600;list-style:none}
+.whynot summary::-webkit-details-marker{display:none}
+.whynot ul{margin:4px 0 0;padding-left:18px}
+/* overlay */
+.overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.overlay[hidden]{display:none}
+.menu{width:min(760px,100%);max-height:100%;padding:clamp(18px,3vh,30px) clamp(18px,3vw,34px);display:flex;flex-direction:column;gap:clamp(10px,2vh,18px)}
+.menu h1{margin:0;font-size:clamp(1.4rem,3.2vh,1.9rem)}
+.menu h1 b{color:var(--accent)}
+.menu .lead{margin:4px 0 0;color:var(--muted)}
+.field label{display:block;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+.seg button{border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left}
+.seg button b{display:block;font-size:1rem}
+.seg button span{display:block;font-size:.78rem;color:var(--muted);margin-top:2px;line-height:1.3}
+.seg button.on{border-color:var(--accent);background:var(--accent-soft)}
+.menu .foot{display:flex;align-items:center;gap:14px}
+.menu .note{font-size:.8rem;color:var(--muted);line-height:1.4}
+/* results */
+.results{width:min(1100px,100%);height:min(720px,100%);display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:16px}
+.rs{padding:22px;display:flex;flex-direction:column;gap:14px}
+.big{display:flex;align-items:center;gap:18px}
+.ring{width:110px;height:110px;flex:none}
+.big h2{margin:0;font-size:1.4rem}
+.big p{margin:4px 0 0;color:var(--muted)}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.trio div{background:var(--soft);border-radius:12px;padding:8px 10px}
+.trio b{display:block;font-size:1.2rem;font-variant-numeric:tabular-nums}
+.trio span{font-size:.75rem;color:var(--muted)}
+.bars{display:flex;flex-direction:column;gap:7px;min-height:0;overflow:hidden}
+.bars h3,.rl h3{margin:0;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.bar{display:grid;grid-template-columns:1fr 46px;gap:8px;align-items:center;font-size:.86rem}
+.bar .track{grid-column:1/-1;height:6px;border-radius:9px;background:var(--soft);overflow:hidden;margin-top:-4px}
+.bar .track i{display:block;height:100%;background:var(--accent);border-radius:9px}
+.bar .c{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.rl{padding:18px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.rows{display:flex;flex-direction:column;gap:6px;flex:1;min-height:0}
+.row{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:0 10px;cursor:pointer;background:var(--card);text-align:left;flex:1;min-height:0;max-height:58px}
+.row:hover{border-color:var(--accent)}
+.row .i{font-weight:700;color:var(--muted);font-size:.85rem}
+.row .q{font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .q small{color:var(--muted)}
+.row .m{display:flex;gap:4px}
+.dot{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:.7rem;font-weight:700}
+.dot.y{background:var(--good-soft);color:var(--good)} .dot.x{background:var(--bad-soft);color:var(--bad)} .dot.na{background:var(--soft);color:var(--muted)}
+.detail{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}
+.detail .rxn{flex:0 1 auto;max-height:30%}
+.detail .rxn svg{max-height:20vh}
+.detail .fb{flex:1}
+.legend{font-size:.75rem;color:var(--muted)}
+@media (orientation:portrait),(max-width:820px){
+  main{grid-template-columns:1fr;grid-template-rows:minmax(0,.8fr) minmax(0,1.2fr)}
+  .results{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);height:100%}
+  .bars{display:none}
+  .molbox svg{max-height:24vh}
+}
+@media (max-width:600px){.chips{display:none}.seg{grid-auto-flow:row}}
+svg.mol text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand">S<sub>N</sub> <b>/</b> E Trainer</div>
+    <div class="chips" id="chips"></div>
+    <div class="spacer"></div>
+    <div class="stats" id="stats"></div>
+    <button class="ghost" id="btnMenu" title="Back to menu">New session</button>
+  </header>
+  <main>
+    <section class="card stage">
+      <div class="tbar" id="tbar"><i></i></div>
+      <div class="qmeta"><span id="qnum"></span><span id="qtier"></span></div>
+      <div class="rxn" id="rxn"></div>
+      <div class="subname" id="subname"></div>
+      <div class="hints" id="hints"></div>
+    </section>
+    <section class="card panel" id="panel"></section>
+  </main>
+</div>
+<div class="overlay" id="overlay"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   1. MOLECULE DRAWING
+   Atoms are placed by [label, parentIndex, angleDeg, bond] where bond is
+   1, 2, 'w' (wedge, narrow end at parent) or 'd' (dash).
+   ===================================================================== */
+const RING  = [['C'],['C',0,30],['C',1,-30],['C',2,-90],['C',3,-150],['C',4,150]];
+const BENZ  = [['C'],['C',0,30,2],['C',1,-30],['C',2,-90,2],['C',3,-150],['C',4,150,2]];
+const CYENE = [['C'],['C',0,30,2],['C',1,-30],['C',2,-90],['C',3,-150],['C',4,150]];
+const R6 = [0,1,2,3,4,5];
+
+function build(spec){
+  const atoms=[], bonds=[];
+  spec.a.forEach(([el,p,ang,b=1])=>{
+    let x=0,y=0;
+    if(p!=null){
+      const r=ang*Math.PI/180; x=atoms[p].x+Math.cos(r); y=atoms[p].y+Math.sin(r);
+      bonds.push({a:p,b:atoms.length,o:b===2?2:1,s:(b==='w'||b==='d')?b:null});
+    }
+    atoms.push({el,x,y});
+  });
+  (spec.r||[]).forEach(([i,j,o=1])=>bonds.push({a:i,b:j,o,s:null}));
+  return {atoms,bonds,ring:spec.ring||null};
+}
+const clone=m=>JSON.parse(JSON.stringify(m));
+
+// label forms: [written to the right of the attachment, written to the left]
+const LBL={'OH':['OH','HO'],'OTs':['OTs','TsO'],'OCH₃':['OCH₃','H₃CO'],'OEt':['OEt','EtO'],'CN':['CN','NC'],
+  'N₃':['N₃','N₃'],'SCH₃':['SCH₃','H₃CS'],'SH':['SH','HS'],'CH₃':['CH₃','H₃C']};
+const cw=ch=>/[₀-₉]/.test(ch)?.42:/[A-Z]/.test(ch)?.68:.52;
+const tw=s=>[...s].reduce((w,c)=>w+cw(c),0);
+const f1=n=>Math.round(n*10)/10;
+
+function svgMol(m,o={}){
+  const B=o.B||44, fs=Math.round(B*.42), A=m.atoms, vis=i=>!A[i].hide;
+  const P=A.map(a=>({x:a.x*B,y:-a.y*B}));
+  const nb=A.map(()=>[]);
+  m.bonds.forEach(b=>{if(vis(b.a)&&vis(b.b)){nb[b.a].push(b.b);nb[b.b].push(b.a);}});
+  const lab=A.map((a,i)=>{
+    if(a.hide||a.el==='C') return null;
+    let dx=0; nb[i].forEach(j=>dx+=P[j].x-P[i].x); dx/=(nb[i].length||1);
+    const pair=LBL[a.el], w=t=>tw(t)*fs;
+    if(!pair) return {t:a.el,anchor:'middle',x:P[i].x,x0:P[i].x-w(a.el)/2,w:w(a.el)};
+    if(dx>B*.3){const t=pair[1],x=P[i].x+cw([...t].pop())*fs/2;return {t,anchor:'end',x,x0:x-w(t),w:w(t)};}
+    const t=pair[0],x=P[i].x-cw(t[0])*fs/2; return {t,anchor:'start',x,x0:x,w:w(t)};
+  });
+  const shrink=(i,j)=>lab[i]?fs*(.42+.28*Math.abs(P[j].y-P[i].y)/B):0;
+  let lines='',fills='';
+  const L=(x1,y1,x2,y2,cls)=>{lines+=`<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}"${cls?` class="${cls}"`:''}/>`;};
+  let cen=null;
+  if(m.ring){cen={x:0,y:0};m.ring.forEach(i=>{cen.x+=P[i].x/m.ring.length;cen.y+=P[i].y/m.ring.length;});}
+  m.bonds.forEach(b=>{
+    if(!vis(b.a)||!vis(b.b))return;
+    const dx=P[b.b].x-P[b.a].x, dy=P[b.b].y-P[b.a].y, len=Math.hypot(dx,dy), ux=dx/len, uy=dy/len, nx=-uy, ny=ux;
+    const s1=shrink(b.a,b.b), s2=shrink(b.b,b.a);
+    const x1=P[b.a].x+ux*s1, y1=P[b.a].y+uy*s1, x2=P[b.b].x-ux*s2, y2=P[b.b].y-uy*s2;
+    if(b.s==='w'){
+      const h=B*.12;
+      fills+=`<polygon points="${f1(x1)},${f1(y1)} ${f1(x2+nx*h)},${f1(y2+ny*h)} ${f1(x2-nx*h)},${f1(y2-ny*h)}"/>`;
+    }else if(b.s==='d'){
+      const n=7,h=B*.12;
+      for(let k=1;k<=n;k++){const t=k/n,cx=x1+(x2-x1)*t,cy=y1+(y2-y1)*t,hw=Math.max(h*t,1.2);L(cx+nx*hw,cy+ny*hw,cx-nx*hw,cy-ny*hw,'th');}
+    }else if(b.o===2){
+      const g=B*.17; let side=0;
+      const mx=(P[b.a].x+P[b.b].x)/2, my=(P[b.a].y+P[b.b].y)/2;
+      if(cen&&m.ring.includes(b.a)&&m.ring.includes(b.b)) side=Math.sign((cen.x-mx)*nx+(cen.y-my)*ny);
+      else{
+        let d=0;[b.a,b.b].forEach(i=>nb[i].forEach(j=>{if(j!==b.a&&j!==b.b)d+=(P[j].x-P[i].x)*nx+(P[j].y-P[i].y)*ny;}));
+        side=Math.abs(d)<B*.05?0:Math.sign(d);
+        // terminal =CH2 on a branched carbon: centre the double bond
+        const oa=nb[b.a].length-1, ob=nb[b.b].length-1;
+        if(Math.min(oa,ob)===0&&Math.max(oa,ob)>=2)side=0;
+      }
+      if(side===0){L(x1+nx*g/2,y1+ny*g/2,x2+nx*g/2,y2+ny*g/2);L(x1-nx*g/2,y1-ny*g/2,x2-nx*g/2,y2-ny*g/2);}
+      else{
+        L(x1,y1,x2,y2);
+        const sh=len*.13, ox=nx*g*side, oy=ny*g*side;
+        L(x1+ux*sh+ox,y1+uy*sh+oy,x2-ux*sh+ox,y2-uy*sh+oy);
+      }
+    }else L(x1,y1,x2,y2);
+  });
+  let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+  const ext=(a,b,c,d)=>{minx=Math.min(minx,a);maxx=Math.max(maxx,b);miny=Math.min(miny,c);maxy=Math.max(maxy,d);};
+  let texts='';
+  A.forEach((a,i)=>{
+    if(a.hide)return;
+    const l=lab[i];
+    if(!l){ext(P[i].x-4,P[i].x+4,P[i].y-4,P[i].y+4);return;}
+    ext(l.x0,l.x0+l.w,P[i].y-fs*.62,P[i].y+fs*.62);
+    texts+=`<text x="${f1(l.x)}" y="${f1(P[i].y+fs*.36)}" text-anchor="${l.anchor}" font-size="${fs}">${l.t}</text>`;
+  });
+  const pad=6, W=maxx-minx+pad*2, H=maxy-miny+pad*2;
+  return `<svg class="mol" xmlns="http://www.w3.org/2000/svg" viewBox="${f1(minx-pad)} ${f1(miny-pad)} ${f1(W)} ${f1(H)}" width="${f1(W)}" height="${f1(H)}" role="img">`+
+    `<g stroke="currentColor" stroke-width="${f1(B*.045)}" stroke-linecap="round" fill="none">${lines.replace(/ class="th"/g,` stroke-width="${f1(B*.035)}"`)}</g>`+
+    `<g fill="currentColor">${fills}${texts}</g></svg>`;
+}
+
+/* =====================================================================
+   2. SUBSTRATES   L = leaving-group atom, A = alpha carbon
+   z / h = beta carbon giving the Zaitsev / Hofmann alkene (only when distinct)
+   g = a gamma carbon for a "wrong position" alkene distractor
+   hof = clean Hofmann example with tert-butoxide
+   ===================================================================== */
+const SUBS=[
+  // methyl
+  {id:'MeBr',name:'bromomethane',deg:'Me',lg:'Br',a:[['CH₃'],['Br',0,0]],L:1,A:0},
+  {id:'MeI', name:'iodomethane', deg:'Me',lg:'I', a:[['CH₃'],['I',0,0]],L:1,A:0},
+  {id:'MeCl',name:'chloromethane',deg:'Me',lg:'Cl',a:[['CH₃'],['Cl',0,0]],L:1,A:0},
+  {id:'MeOTs',name:'methyl tosylate',deg:'Me',lg:'OTs',a:[['CH₃'],['OTs',0,0]],L:1,A:0},
+  // primary
+  {id:'EtBr',name:'bromoethane',deg:'1',lg:'Br',a:[['C'],['C',0,30],['Br',1,-30]],L:2,A:1},
+  {id:'PrCl',name:'1-chloropropane',deg:'1',lg:'Cl',a:[['C'],['C',0,30],['C',1,-30],['Cl',2,30]],L:3,A:2},
+  {id:'BuBr',name:'1-bromobutane',deg:'1',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['Br',3,-30]],L:4,A:3},
+  {id:'PentI',name:'1-iodopentane',deg:'1',lg:'I',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['C',3,-30],['I',4,30]],L:5,A:4},
+  {id:'iPentBr',name:'1-bromo-3-methylbutane',deg:'1',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['Br',3,-30],['C',1,90]],L:4,A:3},
+  {id:'HexCl',name:'1-chlorohexane',deg:'1',lg:'Cl',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['C',3,-30],['C',4,30],['Cl',5,-30]],L:6,A:5},
+  {id:'PrOTs',name:'propyl tosylate',deg:'1',lg:'OTs',a:[['C'],['C',0,30],['C',1,-30],['OTs',2,30]],L:3,A:2},
+  {id:'BuOTs',name:'butyl tosylate',deg:'1',lg:'OTs',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['OTs',3,-30]],L:4,A:3},
+  {id:'BuF',name:'1-fluorobutane',deg:'1',lg:'F',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['F',3,-30]],L:4,A:3},
+  {id:'BuOH',name:'1-butanol',deg:'1',lg:'OH',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['OH',3,-30]],L:4,A:3},
+  {id:'PrOH',name:'1-propanol',deg:'1',lg:'OH',a:[['C'],['C',0,30],['C',1,-30],['OH',2,30]],L:3,A:2},
+  {id:'PentOH',name:'1-pentanol',deg:'1',lg:'OH',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['C',3,-30],['OH',4,30]],L:5,A:4},
+  // secondary
+  {id:'2BuBr',name:'2-bromobutane',deg:'2',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['Br',1,90,'w']],L:4,A:1,stereo:1,z:2,h:0},
+  {id:'2PentBr',name:'2-bromopentane',deg:'2',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['C',3,-30],['Br',1,90,'d']],L:5,A:1,stereo:1,z:2,h:0},
+  {id:'2HexCl',name:'2-chlorohexane',deg:'2',lg:'Cl',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['C',3,-30],['C',4,30],['Cl',1,90,'w']],L:6,A:1,stereo:1,z:2,h:0},
+  {id:'2HexI',name:'2-iodohexane',deg:'2',lg:'I',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['C',3,-30],['C',4,30],['I',1,90,'d']],L:6,A:1,stereo:1,z:2,h:0},
+  {id:'2BuOTs',name:'2-butyl tosylate',deg:'2',lg:'OTs',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['OTs',1,90,'d']],L:4,A:1,stereo:1,z:2,h:0},
+  {id:'2PrI',name:'2-iodopropane',deg:'2',lg:'I',a:[['C'],['C',0,30],['C',1,-30],['I',1,90]],L:3,A:1,beta:0},
+  {id:'2PrBr',name:'2-bromopropane',deg:'2',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['Br',1,90]],L:3,A:1,beta:0},
+  {id:'3PentBr',name:'3-bromopentane',deg:'2',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['C',3,-30],['Br',2,-90]],L:5,A:2,beta:1},
+  {id:'CyBr',name:'bromocyclohexane',deg:'2',lg:'Br',a:RING.concat([['Br',1,90]]),r:[[5,0]],ring:R6,L:6,A:1,beta:0},
+  {id:'CyCl',name:'chlorocyclohexane',deg:'2',lg:'Cl',a:RING.concat([['Cl',1,90]]),r:[[5,0]],ring:R6,L:6,A:1,beta:0},
+  {id:'CyOTs',name:'cyclohexyl tosylate',deg:'2',lg:'OTs',a:RING.concat([['OTs',1,90]]),r:[[5,0]],ring:R6,L:6,A:1,beta:0},
+  {id:'2PrF',name:'2-fluoropropane',deg:'2',lg:'F',a:[['C'],['C',0,30],['C',1,-30],['F',1,90]],L:3,A:1,beta:0},
+  {id:'CyOH',name:'cyclohexanol',deg:'2',lg:'OH',a:RING.concat([['OH',1,90]]),r:[[5,0]],ring:R6,L:6,A:1,beta:0},
+  {id:'2BuOH',name:'2-butanol',deg:'2',lg:'OH',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['OH',1,90]],L:4,A:1,z:2,h:0},
+  // tertiary
+  {id:'tBuBr',name:'2-bromo-2-methylpropane',deg:'3',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['Br',1,90],['C',1,-90]],L:3,A:1,beta:0},
+  {id:'tBuCl',name:'2-chloro-2-methylpropane',deg:'3',lg:'Cl',a:[['C'],['C',0,30],['C',1,-30],['Cl',1,90],['C',1,-90]],L:3,A:1,beta:0},
+  {id:'tBuI',name:'2-iodo-2-methylpropane',deg:'3',lg:'I',a:[['C'],['C',0,30],['C',1,-30],['I',1,90],['C',1,-90]],L:3,A:1,beta:0},
+  {id:'tAmBr',name:'2-bromo-2-methylbutane',deg:'3',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['Br',1,90],['C',1,-90]],L:4,A:1,z:2,h:0,g:3,hof:1},
+  {id:'tAmCl',name:'2-chloro-2-methylbutane',deg:'3',lg:'Cl',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['Cl',1,90],['C',1,-90]],L:4,A:1,z:2,h:0,g:3,hof:1},
+  {id:'DMBBr',name:'2-bromo-2,3-dimethylbutane',deg:'3',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['Br',1,90],['C',1,-90],['C',2,-90]],L:4,A:1,z:2,h:0,hof:1},
+  {id:'MeCyBr',name:'1-bromo-1-methylcyclohexane',deg:'3',lg:'Br',a:RING.concat([['Br',1,60],['C',1,120]]),r:[[5,0]],ring:R6,L:6,A:1,z:0,h:7,g:5,hof:1},
+  {id:'MeCyCl',name:'1-chloro-1-methylcyclohexane',deg:'3',lg:'Cl',a:RING.concat([['Cl',1,60],['C',1,120]]),r:[[5,0]],ring:R6,L:6,A:1,z:0,h:7,g:5,hof:1},
+  {id:'3M3HBr',name:'3-bromo-3-methylhexane',deg:'3',lg:'Br',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['C',3,-30],['C',4,30],['Br',2,-120,'w'],['C',2,-60,'d']],L:6,A:2,stereo:1,beta:1},
+  {id:'3M3HCl',name:'3-chloro-3-methylhexane',deg:'3',lg:'Cl',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['C',3,-30],['C',4,30],['Cl',2,-120,'d'],['C',2,-60,'w']],L:6,A:2,stereo:1,beta:1},
+  {id:'tBuOH',name:'2-methyl-2-propanol',deg:'3',lg:'OH',a:[['C'],['C',0,30],['C',1,-30],['OH',1,90],['C',1,-90]],L:3,A:1,beta:0},
+  {id:'tAmOH',name:'2-methyl-2-butanol',deg:'3',lg:'OH',a:[['C'],['C',0,30],['C',1,-30],['C',2,30],['OH',1,90],['C',1,-90]],L:4,A:1,z:2,h:0,g:3},
+  {id:'MeCyOH',name:'1-methylcyclohexanol',deg:'3',lg:'OH',a:RING.concat([['OH',1,60],['C',1,120]]),r:[[5,0]],ring:R6,L:6,A:1,z:0,h:7,g:5},
+  // sp2 (vinyl / aryl)
+  {id:'PhBr',name:'bromobenzene',deg:'sp2',lg:'Br',a:BENZ.concat([['Br',1,90]]),r:[[5,0]],ring:R6,L:6,A:1},
+  {id:'PhCl',name:'chlorobenzene',deg:'sp2',lg:'Cl',a:BENZ.concat([['Cl',1,90]]),r:[[5,0]],ring:R6,L:6,A:1},
+  {id:'CyeBr',name:'1-bromocyclohexene',deg:'sp2',lg:'Br',a:CYENE.concat([['Br',1,90]]),r:[[5,0]],ring:R6,L:6,A:1},
+  {id:'VinBr',name:'2-bromopropene',deg:'sp2',lg:'Br',a:[['C'],['C',0,30],['C',1,-30,2],['Br',1,90]],L:3,A:1},
+];
+SUBS.forEach(s=>s.mol=build(s));
+
+/* =====================================================================
+   3. REAGENTS
+   snwb = strong nucleophile / weak base   snsb = strong nucleophile / strong base
+   bulky = strong, hindered base           weak = weak nucleophile / weak base (solvolysis)
+   hx = HBr with alcohols                  dehyd = conc. acid + heat with alcohols
+   ===================================================================== */
+const RG=[
+  {id:'NaI',  cat:'snwb',f:'NaI',      solv:['acetone'],    nu:'I',   nm:'Iodide (I⁻)'},
+  {id:'NaBr', cat:'snwb',f:'NaBr',     solv:['acetone','DMSO'],nu:'Br',nm:'Bromide (Br⁻)'},
+  {id:'NaCN', cat:'snwb',f:'NaCN',     solv:['DMSO','DMF'], nu:'CN',  nm:'Cyanide (⁻CN)'},
+  {id:'NaN3', cat:'snwb',f:'NaN₃',     solv:['DMSO','DMF'], nu:'N₃',  nm:'Azide (N₃⁻)'},
+  {id:'NaSMe',cat:'snwb',f:'NaSCH₃',   solv:['DMF','DMSO'], nu:'SCH₃',nm:'Methanethiolate (CH₃S⁻)'},
+  {id:'NaSH', cat:'snwb',f:'NaSH',     solv:['DMF'],        nu:'SH',  nm:'Hydrosulfide (HS⁻)'},
+  {id:'NaOH', cat:'snsb',f:'NaOH',     solv:['H₂O'],        nu:'OH',  nm:'Hydroxide (HO⁻)',degs:['Me','1','OHsub']},
+  {id:'NaOMe',cat:'snsb',f:'NaOCH₃',   solv:['CH₃OH'],      nu:'OCH₃',nm:'Methoxide (CH₃O⁻)'},
+  {id:'NaOEt',cat:'snsb',f:'NaOCH₂CH₃',solv:['CH₃CH₂OH'],   nu:'OEt', nm:'Ethoxide (CH₃CH₂O⁻)'},
+  {id:'KOtBu',cat:'bulky',f:'KOC(CH₃)₃',solv:['(CH₃)₃COH','DMSO'],nm:'tert-Butoxide ((CH₃)₃CO⁻)'},
+  {id:'H2O',  cat:'weak',f:'H₂O',      solv:[''],           nu:'OH',  nm:'Water'},
+  {id:'MeOH', cat:'weak',f:'CH₃OH',    solv:[''],           nu:'OCH₃',nm:'Methanol'},
+  {id:'EtOH', cat:'weak',f:'CH₃CH₂OH', solv:[''],           nu:'OEt', nm:'Ethanol'},
+  {id:'HBr',  cat:'hx',  f:'HBr (conc.)',solv:[''],         nu:'Br',  nm:'HBr'},
+  {id:'H2SO4',cat:'dehyd',f:'H₂SO₄ (conc.)',solv:[''],                nm:'Concentrated H₂SO₄'},
+  {id:'H3PO4',cat:'dehyd',f:'H₃PO₄ (conc.)',solv:[''],                nm:'Concentrated H₃PO₄'},
+];
+const APROTIC=['acetone','DMSO','DMF'];
+const lgType=lg=>lg==='F'?'F':lg==='OH'?'OH':'good';
+
+/* =====================================================================
+   4. RULE ENGINE (traditional textbook rules; ambiguous combinations return null
+   and are never asked)
+   ===================================================================== */
+const ORDER=['SN1','SN2','E1','E2'];
+function evaluate(s,r,heat){
+  if(r.degs&&!(r.degs.includes(s.deg)||(lgType(s.lg)==='OH'&&r.degs.includes('OHsub'))))return null;
+  const c=r.cat,d=s.deg,lt=lgType(s.lg);
+  const C=(set,major,key,tier,extra)=>Object.assign({set,major:major||set[0],key,tier},extra||{});
+  let R=null;
+  if(lt==='good'){
+    if((r.id==='NaBr'&&s.lg==='Br')||(r.id==='NaI'&&s.lg==='I'))return null;
+    if(c==='hx'||c==='dehyd')return null;
+    if(d==='sp2'){ if(!heat&&(c==='snwb'||c==='weak'))R=C(['NR'],0,'sp2',3); }
+    else if(d==='Me'){
+      if(heat)return null;
+      if(c==='snwb')R=C(['SN2'],0,'me',1);
+      else if(c==='snsb')R=C(['SN2'],0,'meStrong',2);
+      else if(c==='weak')R=C(['NR'],0,'weakNoIon',2);
+    }else if(d==='1'){
+      if(c==='snwb'&&!heat)R=C(['SN2'],0,'p_snwb',1);
+      else if(c==='snsb'&&!heat)R=C(['SN2','E2'],'SN2','p_snsb',2);
+      else if(c==='bulky')R=C(['E2'],0,'bulky',1);
+      else if(c==='weak'&&!heat)R=C(['NR'],0,'weakNoIon',2);
+    }else if(d==='2'){
+      if(c==='snwb'&&!heat)R=C(['SN2'],0,'s_snwb',2);
+      else if(c==='snsb')R=C(['SN2','E2'],'E2','s_snsb',2);
+      else if(c==='bulky')R=C(['E2'],0,'bulky',1);
+      else if(c==='weak'&&heat)R=C(['SN1','E1'],'E1','s_weak',2);
+    }else if(d==='3'){
+      if(c==='snsb')R=C(['E2'],0,'t_strong',1);
+      else if(c==='bulky')R=C(['E2'],0,'bulky',1);
+      else if(c==='weak')R=heat?C(['SN1','E1'],'E1','t_weakHeat',1):C(['SN1','E1'],'SN1','t_weakRT',1);
+    }
+    if(R&&s.lg==='OTs')R.tier=Math.max(R.tier,2);
+  }else if(lt==='F'){
+    if(!heat&&(c==='snwb'||c==='weak'))R=C(['NR'],0,'F',3);
+  }else{ // alcohols
+    if((c==='snwb'||c==='snsb')&&!heat)R=C(['NR'],0,'OH',3);
+    else if(c==='hx'&&!heat){ if(d==='1')R=C(['SN2'],0,'hx1',2,{noElim:1}); else if(d==='3')R=C(['SN1'],0,'hx3',2,{noElim:1}); }
+    else if(c==='dehyd'&&heat&&(d==='2'||d==='3'))R=C(['E1'],0,'dehyd',2);
+  }
+  return R;
+}
+// what the student is asked depends on the topic toggle
+function project(R,topic){
+  if(topic==='both')return {set:R.set.slice(),major:R.major};
+  const keep=topic==='sub'?['SN1','SN2']:['E1','E2'];
+  const set=R.set.filter(m=>keep.includes(m));
+  if(!set.length)return {set:['NR'],major:'NR'};
+  return {set,major:set.length>1?R.major:set[0]};
+}
+
+/* =====================================================================
+   5. TEXT: key ideas, misconceptions, explanations, hints
+   ===================================================================== */
+const SN1='S<sub>N</sub>1',SN2='S<sub>N</sub>2';
+const MECH={SN1:{h:SN1,d:'unimolecular substitution'},SN2:{h:SN2,d:'bimolecular substitution'},E1:{h:'E1',d:'unimolecular elimination'},E2:{h:'E2',d:'bimolecular elimination'}};
+const NRL={both:'No reaction',sub:'No substitution',elim:'No elimination'};
+const mh=(m,topic)=>m==='NR'?NRL[topic||'both']:MECH[m].h;
+
+const KEYS={
+  me:{t:`Methyl substrate + strong nucleophile: backside attack is unhindered, and with no β-hydrogens no elimination is possible → ${SN2}.`,c:`${SN2} conditions`,top:['sn2','e2']},
+  meStrong:{t:`A methyl substrate has no β-hydrogens, so even a strong base can’t eliminate; it attacks carbon instead → ${SN2}.`,c:`${SN2} conditions`,top:['e2','sn2']},
+  weakNoIon:{t:`A weak nucleophile is too weak for ${SN2}, and a methyl/1° carbocation is too unstable for ${SN1}/E1 → no reaction.`,c:'No-reaction traps',top:['sn1','sn2']},
+  p_snwb:{t:`Unhindered 1° carbon + a good nucleophile that is a weak base → ${SN2}.`,c:`${SN2} conditions`,top:['sn2']},
+  p_snsb:{t:`1° substrate + strong, unhindered base/nucleophile: backside attack is easy, so ${SN2} is major with some E2.`,c:'Strong bases: E2 vs SN2',top:['sn2','e2']},
+  bulky:{t:`A bulky strong base is too hindered to attack carbon, so it removes a β-hydrogen instead → E2.`,c:'Bulky bases',top:['bulky','e2']},
+  s_snwb:{t:`2° substrate + a good nucleophile that is a weak base, in a polar aprotic solvent → ${SN2}.`,c:`${SN2} conditions`,top:['sn2']},
+  s_snsb:{t:`2° substrate + strong base: hindrance slows ${SN2}, so E2 is major with some ${SN2}.`,c:'Strong bases: E2 vs SN2',top:['e2','sn2']},
+  s_weak:{t:`Weak nucleophile/base → first-order: the 2° substrate ionizes (${SN1}/E1), and heat makes E1 major.`,c:`${SN1}/E1 & heat`,top:['e1','heat','sn1']},
+  t_strong:{t:`A 3° carbon blocks backside attack, and a strong base removes a β-hydrogen in one concerted step → E2.`,c:'Strong bases: E2 vs SN2',top:['sn2','e2']},
+  t_weakRT:{t:`3° substrate + weak nucleophile/base: it ionizes to a stable 3° carbocation (${SN1}/E1); without heat, ${SN1} is major.`,c:`${SN1}/E1 & heat`,top:['sn1','heat']},
+  t_weakHeat:{t:`3° substrate + weak nucleophile/base: it ionizes to a stable 3° carbocation (${SN1}/E1); heat makes E1 major.`,c:`${SN1}/E1 & heat`,top:['e1','heat']},
+  sp2:{t:`The leaving group is on an sp² carbon: backside attack is blocked and vinyl/aryl cations are very unstable → no reaction.`,c:'No-reaction traps',top:['sp2']},
+  F:{t:`Fluoride is a very poor leaving group (strong C–F bond) → no reaction.`,c:'No-reaction traps',top:['lg']},
+  OH:{t:`Without acid, –OH would have to leave as hydroxide, a poor leaving group → no substitution or elimination.`,c:'No-reaction traps',top:['lg','acid']},
+  hx1:{t:`Acid converts –OH into –OH₂⁺; a 1° carbocation is too unstable to form, so Br⁻ displaces water by ${SN2}.`,c:'Alcohols & acid',top:['acid','sn1']},
+  hx3:{t:`Acid converts –OH into –OH₂⁺; water leaves to give a stable 3° carbocation, which Br⁻ traps → ${SN1}.`,c:'Alcohols & acid',top:['acid','sn1']},
+  dehyd:{t:`Conc. acid + heat: the protonated –OH leaves as water to form a carbocation; with no good nucleophile and heat → E1.`,c:'Alcohols & acid',top:['acid','e1','heat']},
+};
+// key ideas that could also describe the same reaction, so never offered as each other's distractors
+const EXCL=[['me','meStrong'],['bulky','t_strong'],['dehyd','s_weak','t_weakHeat'],['hx3','t_weakRT','t_weakHeat'],['hx1','p_snwb','s_snwb'],['F','weakNoIon'],['OH','weakNoIon']];
+const MYTHS=[
+  [`Tertiary substrates react fastest by ${SN2} because they are the most substituted.`,'sn2'],
+  [`Polar aprotic solvents favor ${SN1} by stabilizing the carbocation.`,'sn1'],
+  [`Weak bases such as water and alcohols favor E2.`,'e2'],
+  [`Bulky bases favor substitution because they are especially strong nucleophiles.`,'bulky'],
+  [`Bulky bases attack the carbon directly, so they favor ${SN2}.`,'bulky'],
+  [`Primary carbocations are stable enough to undergo ${SN1} and E1.`,'sn1'],
+  [`Lower temperatures favor elimination over substitution.`,'heat'],
+  [`Heat favors substitution because substitution is entropically favored.`,'heat'],
+  [`–OH is a good leaving group, even without acid.`,'lg'],
+  [`Fluoride is the best halide leaving group because it is the most electronegative.`,'lg'],
+  [`Vinyl and aryl halides undergo ${SN2} easily because the carbon is sp².`,'sp2'],
+  [`Aryl halides readily form carbocations, so they react by ${SN1}.`,'sp2'],
+  [`Iodide is a strong base, so it promotes E2.`,'e2'],
+  [`Methyl halides readily undergo E2 with strong bases.`,'e2'],
+  [`${SN2} reactions pass through a carbocation intermediate.`,'sn2'],
+  [`Polar protic solvents make nucleophiles more reactive, which favors ${SN2}.`,'sn2'],
+  [`E1 needs a strong base to remove the proton in its rate-determining step.`,'e1'],
+  [`The rate of an ${SN1} reaction depends on the nucleophile concentration.`,'sn1'],
+  [`Strong nucleophiles favor first-order (${SN1}/E1) mechanisms.`,'sn1'],
+  [`Concentrated H₂SO₄ supplies a good nucleophile (HSO₄⁻), so substitution wins.`,'acid'],
+  [`A strong base is needed to turn the –OH of an alcohol into a leaving group.`,'acid'],
+];
+
+function bullets(q){
+  const s=q.s,r=q.r,c=r.cat,d=s.deg,lt=lgType(s.lg),B=[];
+  B.push({Me:`Methyl substrate: no steric hindrance (ideal for ${SN2}) and no β-hydrogens, so no elimination.`,
+    '1':`Primary (1°) substrate: unhindered for backside attack; a 1° carbocation is too unstable for ${SN1}/E1.`,
+    '2':`Secondary (2°) substrate: every pathway is possible, so the reagent and conditions decide.`,
+    '3':`Tertiary (3°) substrate: too hindered for ${SN2}, but it ionizes to a stable 3° carbocation.`,
+    sp2:`The leaving group is on an sp² carbon: backside attack is blocked and vinyl/aryl cations are very unstable.`}[d]);
+  if(lt==='F')B.push('Fluoride is a very poor leaving group (strong C–F bond).');
+  else if(lt==='OH')B.push(c==='hx'||c==='dehyd'?'Strong acid protonates the –OH to –OH₂⁺, so neutral water can leave.':'–OH is a poor leaving group: it would have to leave as hydroxide, a strong base.');
+  else if(s.lg==='OTs')B.push('Tosylate (–OTs) is an excellent leaving group and behaves like a halide.');
+  B.push({snwb:`${r.nm} is a strong nucleophile but a weak base.`,
+    snsb:`${r.nm} is both a strong nucleophile and a strong base.`,
+    bulky:`${r.nm} is a strong but bulky base: too hindered to attack carbon, so it removes a β-hydrogen.`,
+    weak:`${r.nm} is a weak nucleophile and a weak base, so only first-order pathways (${SN1}/E1) are possible.`,
+    hx:'Br⁻ (from HBr) is a good nucleophile and a very weak base.',
+    dehyd:`${r.nm}: its conjugate base is a very poor nucleophile.`}[c]);
+  if(APROTIC.includes(q.solv)&&lt==='good'&&d!=='sp2')B.push(`${q.solv} is polar aprotic: the nucleophile stays unsolvated and reactive, which favors ${SN2}.`);
+  if(c==='weak'||c==='dehyd'){
+    if(q.heat&&lt==='good'||c==='dehyd')B.push('Heat favors elimination over substitution.');
+    else if(d==='3'&&lt==='good')B.push(`No heat (25 °C): substitution (${SN1}) is the major pathway.`);
+  }else if(q.heat&&q.R.set.includes('E2'))B.push('Heat further favors elimination.');
+  return B;
+}
+function whyNot(m,q){
+  const s=q.s,r=q.r,c=r.cat,d=s.deg,lt=lgType(s.lg);
+  if(m==='NR')return {both:'A reaction does occur',sub:'Substitution does occur',elim:'Elimination does occur'}[q.topic]+': there is a usable leaving group and a suitable reagent.';
+  if(lt==='F')return 'Fluoride is too poor a leaving group for any pathway.';
+  if(lt==='OH'&&c!=='hx'&&c!=='dehyd')return '–OH is a poor leaving group unless acid protonates it.';
+  if(d==='sp2')return m==='SN2'?'Backside attack on an sp² carbon is blocked.':m==='E2'?`${r.nm} is not a strong enough base, and vinyl/aryl halides are not standard E2 substrates under these conditions.`:'Vinyl/aryl cations are far too unstable to form.';
+  if(m==='SN2'){
+    if(d==='3')return 'A 3° carbon is too hindered for backside attack.';
+    if(c==='weak')return `${r.nm} is too weak a nucleophile for ${SN2}.`;
+    if(c==='bulky')return 'tert-Butoxide is too bulky to reach the carbon; it acts as a base.';
+    if(c==='dehyd')return 'HSO₄⁻ / H₂PO₄⁻ are very poor nucleophiles.';
+    return `${SN2} is not favored here.`;
+  }
+  if(m==='SN1'||m==='E1'){
+    if(m==='E1'&&d==='Me')return 'There are no β-hydrogens to remove.';
+    if(d==='Me'||d==='1')return 'Methyl and 1° carbocations are too unstable to form.';
+    if(c==='snwb')return `A strong nucleophile reacts in a second-order step (${SN2}) before any carbocation forms.`;
+    if(c==='snsb'||c==='bulky')return 'With a strong base present, the second-order pathway (E2) is faster than ionization.';
+    if(m==='E1'&&c==='hx')return `Br⁻ is a good nucleophile and there is no heat, so the carbocation is trapped (${SN1}).`;
+    if(m==='SN1'&&c==='dehyd')return 'There is no good nucleophile, and heat drives elimination.';
+    return `${mh(m)} is not favored here.`;
+  }
+  if(m==='E2'){
+    if(d==='Me')return 'There are no β-hydrogens, so elimination is impossible.';
+    if(c==='weak')return `E2 needs a strong base; ${r.nm.toLowerCase()} is a weak base.`;
+    if(c==='snwb')return `${r.nm} is a weak base, so it substitutes rather than eliminates.`;
+    if(c==='hx')return 'Br⁻ is a very weak base; substitution occurs.';
+    if(c==='dehyd')return 'There is no strong base; the protonated alcohol ionizes first → E1.';
+    return 'E2 is not favored here.';
+  }
+}
+function alsoWhy(m,q){
+  if(m==='SN1'||m==='E1')return `The carbocation can be trapped by the solvent (${SN1}) or lose a β-hydrogen (E1), so both always occur together.`;
+  if(m==='E2')return `${q.r.nm} is also a strong base, so some E2 competes.`;
+  if(m==='SN2')return `${q.r.nm} is also a strong nucleophile, so some ${SN2} competes.`;
+  return '';
+}
+function hints(q){
+  return [
+    'Start with the substrate: is the carbon holding the leaving group methyl, 1°, 2°, 3°, or sp²? Is the leaving group a good one?',
+    `Classify <b>${q.r.f}</b>: strong or weak nucleophile? Strong or weak base? Bulky?`,
+    {snwb:'A strong nucleophile that is a weak base usually means second-order substitution, if the carbon is accessible.',
+     snsb:`Strong base / strong nucleophile → think second-order (${SN2} / E2). The substrate decides which wins.`,
+     bulky:'Bulky bases have trouble reaching a carbon atom. What can they reach?',
+     weak:`Weak nucleophile/base → think first-order (${SN1} / E1), but only if a stable carbocation can form. Check the temperature.`,
+     hx:'What does strong acid do to an –OH group? Then ask whether a stable carbocation can form.',
+     dehyd:'Strong acid + heat with an alcohol: what does the –OH become, and is there any good nucleophile around?'}[q.r.cat]
+  ];
+}
+
+/* =====================================================================
+   6. PRODUCT QUESTIONS (stereochemistry, Zaitsev / Hofmann)
+   ===================================================================== */
+function subst(s,nu,flip){
+  const m=clone(s.mol); m.atoms[s.L].el=nu;
+  if(flip)m.bonds.forEach(b=>{if(b.a===s.A&&b.s)b.s=b.s==='w'?'d':'w';});
+  return m;
+}
+function alkene(s,beta,gamma){
+  const m=clone(s.mol); m.atoms[s.L].hide=true;
+  m.bonds.forEach(b=>{if(b.a===s.A)b.s=null;});
+  const x=gamma==null?[s.A,beta]:[beta,gamma];
+  const bd=m.bonds.find(b=>(b.a===x[0]&&b.b===x[1])||(b.a===x[1]&&b.b===x[0])); bd.o=2;
+  return m;
+}
+function makeProduct(q){
+  const s=q.s,r=q.r,target=q.proj.set.length>1?q.proj.major:q.proj.set[0];
+  if(target==='NR')return null;
+  let opts,correct,kind;
+  if(target==='SN1'||target==='SN2'){
+    if(!s.stereo||!r.nu)return null;
+    const inv=subst(s,r.nu,true),ret=subst(s,r.nu,false);
+    opts=[{id:'inv',mols:[inv]},{id:'ret',mols:[ret]},{id:'rac',mols:[inv,ret]}];
+    const b=s.z!=null?s.z:s.beta; if(b!=null)opts.push({id:'alk',mols:[alkene(s,b)]});
+    correct=target==='SN2'?'inv':'rac'; kind='stereo';
+  }else{
+    if(s.z==null)return null;
+    const bulky=r.cat==='bulky'; if(bulky&&!s.hof)return null;
+    opts=[{id:'zai',mols:[alkene(s,s.z)]},{id:'hof',mols:[alkene(s,s.h)]}];
+    if(s.g!=null)opts.push({id:'bg',mols:[alkene(s,s.z,s.g)]});
+    if(r.nu)opts.push({id:'sub',mols:[subst(s,r.nu,!!s.stereo)]});
+    correct=bulky?'hof':'zai'; kind='regio';
+  }
+  shuffle(opts);
+  const ex={inv:`${SN2} is a one-step backside attack → inversion of configuration (the wedge becomes a dash, or vice versa).`,
+    rac:`${SN1} goes through a flat sp² carbocation that can be attacked from either face → racemization (both enantiomers).`,
+    zai:'A small base (or E1) gives the more substituted, more stable alkene: the Zaitsev product.',
+    hof:'The bulky base removes the most accessible (least hindered) β-hydrogen → the less substituted Hofmann product.'}[correct];
+  const hint=kind==='stereo'?'Does this pathway involve a backside attack or a flat carbocation?':(r.cat==='bulky'?'Is the base bulky? Which β-hydrogens can it reach most easily?':'Which possible alkene is more substituted (and more stable)?');
+  const prompt=kind==='stereo'?'What is the substitution product?':'What is the major alkene product?';
+  return {opts,correct,kind,ex,hint,prompt};
+}
+
+/* =====================================================================
+   7. STATE, BANK & SAMPLING
+   ===================================================================== */
+const store={get(k,d){try{const v=localStorage.getItem('sne_'+k);return v?JSON.parse(v):d;}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem('sne_'+k,JSON.stringify(v));}catch(e){}}};
+const rand=n=>Math.floor(Math.random()*n);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rand(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+let SET=Object.assign({mode:'practice',topic:'both',tier:2},store.get('settings',{}));
+let BANK=[],GROUPS={},sess=null,Q=null,timerId=null;
+const QUIZ_LEN=10, QUIZ_SECS=60;
+const TIERS={1:'Intro',2:'Standard',3:'Exam'};
+const TOPICS={sub:'Substitution',elim:'Elimination',both:'Sub + Elim'};
+
+function buildBank(st){
+  const bank=[];
+  for(const s of SUBS)for(const r of RG)for(const heat of [false,true])for(const solv of r.solv){
+    const R=evaluate(s,r,heat); if(!R||R.tier>st.tier)continue;
+    if(st.topic==='elim'&&R.noElim)continue;
+    bank.push({s,r,heat,solv,R,key:[s.id,r.id,heat?1:0,solv].join('|'),proj:project(R,st.topic)});
+  }
+  return bank;
+}
+function prepare(){
+  BANK=buildBank(SET); GROUPS={};
+  BANK.forEach(b=>{const k=b.proj.set.join('+')+'|'+b.proj.major;(GROUPS[k]=GROUPS[k]||[]).push(b);});
+}
+function pickItem(){
+  const keys=Object.keys(GROUPS), recent=store.get('recent',[]);
+  for(let t=0;t<60;t++){
+    const g=GROUPS[keys[rand(keys.length)]];
+    let pool=g.filter(b=>!sess.used.has(b.key)&&b.s.id!==sess.lastSub&&b.proj.set.join()+b.proj.major!==sess.lastAns);
+    if(!pool.length)continue;
+    if(t<40){const ns=pool.filter(b=>!sess.subs.has(b.s.id));if(ns.length)pool=ns;else continue;}
+    const fresh=pool.filter(b=>!recent.includes(b.key)); if(fresh.length)pool=fresh;
+    if(SET.tier===3){const hard=pool.filter(b=>b.R.tier===3);if(hard.length&&Math.random()<.35)pool=hard;}
+    return pool[rand(pool.length)];
+  }
+  return BANK[rand(BANK.length)];
+}
+function newQuestion(){
+  const b=pickItem();
+  sess.used.add(b.key); sess.subs.add(b.s.id); if(sess.subs.size>24)sess.subs.clear(); sess.lastSub=b.s.id; sess.lastAns=b.proj.set.join()+b.proj.major;
+  const recent=store.get('recent',[]); recent.push(b.key); store.set('recent',recent.slice(-120));
+  const q=Object.assign({},b,{topic:SET.topic});
+  const p=SET.tier===1?0:SET.tier===2?.45:.6;
+  if(Math.random()<p)q.prod=makeProduct(q);
+  if(SET.mode==='quiz'){
+    // distractors: reasoning that is true for a *different* reaction, plus one common misconception
+    const kk=q.R.key, k=KEYS[kk], near=new Set([kk]);
+    EXCL.forEach(g=>{if(g.includes(kk))g.forEach(x=>near.add(x));});
+    const others=shuffle(Object.keys(KEYS).filter(x=>!near.has(x)));
+    others.sort((a,b)=>KEYS[b].top.filter(t=>k.top.includes(t)).length-KEYS[a].top.filter(t=>k.top.includes(t)).length);
+    const pool=others.slice(0,5), wrong=shuffle(pool).slice(0,2).map(x=>KEYS[x].t);
+    const rel=MYTHS.filter(x=>k.top.includes(x[1]));
+    wrong.push((rel.length?rel:MYTHS)[rand((rel.length?rel:MYTHS).length)][0]);
+    q.follow=shuffle([{t:k.t,ok:true},...wrong.map(t=>({t,ok:false}))]);
+  }
+  q.rec={sel:[],mechOk:false,majorOk:null,prodOk:null,followOk:null,timeout:false,time:0,hintsUsed:0};
+  return q;
+}
+
+/* =====================================================================
+   8. RENDERING
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const panel=$('#panel');
+function arrowSVG(){return `<svg viewBox="0 0 200 16" preserveAspectRatio="none" aria-hidden="true"><line x1="2" y1="8" x2="186" y2="8" stroke="currentColor" stroke-width="2"/><path d="M184 2 L198 8 L184 14 z" fill="currentColor"/></svg>`;}
+function rxnHTML(q,B){
+  const below=[q.solv,q.heat?'Δ':(q.r.cat==='weak'?'25 °C':'')].filter(Boolean).join(', ');
+  return `<div class="molbox">${svgMol(q.s.mol,{B})}</div>
+    <div class="arrow"><div class="above">${q.r.f}</div>${arrowSVG()}<div class="below">${below||'&nbsp;'}</div></div>
+    <div class="prodbox" id="prodbox">?</div>`;
+}
+function renderHeader(){
+  $('#chips').innerHTML=[SET.mode==='quiz'?'Quiz':'Practice',TOPICS[SET.topic],TIERS[SET.tier]].map(t=>`<span class="chip">${t}</span>`).join('');
+  let h='';
+  if(!sess){$('#stats').innerHTML='';return;}
+  if(SET.mode==='practice'){
+    h=`<span>Streak <strong>${sess.streak}</strong></span><span>Correct <strong>${sess.right}/${sess.n}</strong></span>`;
+  }else{
+    h=`<span>Score <strong>${sess.points}</strong></span><span class="timer" id="timer">${Q&&Q.step==='mech'||Q&&Q.step==='major'?Q.left+'s':'—'}</span>`;
+  }
+  $('#stats').innerHTML=h;
+}
+function showQuestion(){
+  Q=newQuestion(); Q.step='mech'; Q.sel=new Set(); Q.hintN=0;
+  $('#rxn').innerHTML=rxnHTML(Q,66);
+  $('#subname').textContent=Q.s.name;
+  $('#hints').innerHTML='';
+  $('#qnum').textContent=SET.mode==='quiz'?`Question ${sess.idx+1} of ${QUIZ_LEN}`:`Question ${sess.n+1}`;
+  $('#qtier').textContent=`${TIERS[SET.tier]} · ${TOPICS[SET.topic]}`;
+  renderMech();
+  $('#tbar').style.display=SET.mode==='quiz'?'':'none';
+  if(SET.mode==='quiz')startTimer();
+  renderHeader();
+}
+function mechOptions(){
+  const ms=SET.topic==='sub'?['SN1','SN2']:SET.topic==='elim'?['E1','E2']:['SN1','SN2','E1','E2'];
+  return ms.concat('NR');
+}
+function renderMech(){
+  const t=SET.topic, opts=mechOptions();
+  const title=t==='sub'?'Which substitution pathway(s) occur?':t==='elim'?'Which elimination pathway(s) occur?':'Which pathway(s) occur?';
+  panel.innerHTML=`<div class="steph"><div class="k">Step 1 · Mechanism</div><h2>${title}</h2><p>Select every pathway that gives a significant product.</p></div>
+    <div class="opts" id="opts">${opts.map((m,i)=>`<button class="opt${m==='NR'?' wide':''}" data-m="${m}"><span class="n">${i+1}</span><span><span class="t">${mh(m,t)}</span><span class="d">${m==='NR'?'none of these pathways happen':MECH[m].d}</span></span></button>`).join('')}</div>
+    <div class="actions"><button class="primary" id="go" disabled>Check answer</button>${SET.mode==='practice'?'<button class="secondary" id="hintBtn">Hint</button>':''}<span class="kbd">keys 1–${opts.length} · Enter</span></div>
+    <div class="fb" id="fb"></div>`;
+  panel.querySelectorAll('.opt').forEach(b=>b.onclick=()=>toggle(b.dataset.m));
+  $('#go').onclick=()=>submitMech();
+  if($('#hintBtn'))$('#hintBtn').onclick=()=>showHint();
+}
+function toggle(m){
+  if(Q.step!=='mech')return;
+  if(m==='NR'){Q.sel=Q.sel.has('NR')?new Set():new Set(['NR']);}
+  else{Q.sel.delete('NR');Q.sel.has(m)?Q.sel.delete(m):Q.sel.add(m);}
+  panel.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',Q.sel.has(b.dataset.m)));
+  $('#go').disabled=!Q.sel.size;
+}
+function showHint(){
+  const H=Q.step==='product'?[Q.prod.hint]:hints(Q);
+  const shown=$('#hints').children.length;
+  if(shown>=H.length)return;
+  $('#hints').insertAdjacentHTML('beforeend',`<div class="hint"><b>Hint ${shown+1}.</b> ${H[shown]}</div>`);
+  Q.rec.hintsUsed++;
+  if(shown+1>=H.length&&$('#hintBtn'))$('#hintBtn').disabled=true;
+}
+function submitMech(timeout){
+  if(Q.step!=='mech')return;
+  const want=Q.proj.set, sel=[...Q.sel];
+  const setOk=!timeout&&sel.length===want.length&&want.every(m=>Q.sel.has(m));
+  Q.rec.sel=sel; Q.rec.timeout=!!timeout;
+  paintMech();
+  if(setOk&&want.length>1){Q.step='major';renderMajor();return;}
+  Q.rec.mechOk=setOk; finishMech();
+}
+function paintMech(){
+  const want=Q.proj.set;
+  panel.querySelectorAll('.opt').forEach(b=>{
+    const m=b.dataset.m,inW=want.includes(m),inS=Q.sel.has(m);
+    b.disabled=true;b.classList.remove('sel');
+    if(inS&&inW)b.classList.add('ok'); else if(inS)b.classList.add('no'); else if(inW)b.classList.add('miss');
+  });
+  const a=panel.querySelector('.actions'); if(a)a.remove();
+}
+function renderMajor(){
+  const fb=$('#fb'), w=Q.proj.set;
+  fb.innerHTML=`<div class="verdict good"><span class="v">✓ Both occur.</span><span class="a">Which one is the <b>major</b> pathway?</span></div>
+    <div class="opts">${w.map((m,i)=>`<button class="opt" data-m="${m}"><span class="n">${i+1}</span><span class="t">${mh(m)} major</span></button>`).join('')}</div>`;
+  fb.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pickMajor(b.dataset.m));
+}
+function pickMajor(m,timeout){
+  if(Q.step!=='major')return;
+  const ok=!timeout&&m===Q.proj.major;
+  Q.rec.majorOk=ok; Q.rec.mechOk=ok; if(timeout)Q.rec.timeout=true;
+  finishMech();
+}
+function answerText(p,topic){
+  if(p.set[0]==='NR')return NRL[topic];
+  return p.set.map(m=>mh(m)).join(' + ')+(p.set.length>1?` <em>(${mh(p.major)} major)</em>`:'');
+}
+function explainHTML(q,full){
+  const ok=q.rec.mechOk;
+  let h=`<div class="verdict ${ok?'good':'bad'}"><span class="v">${ok?'✓ Correct':q.rec.timeout?'⏱ Time’s up':'✗ Not quite'}</span><span class="a">Answer: ${answerText(q.proj,q.topic)}</span></div>`;
+  if(!ok&&q.rec.sel.length)h+=`<div class="overall">You chose: ${q.rec.sel.map(m=>mh(m,q.topic)).join(' + ')}${q.rec.majorOk===false?' (wrong major pathway)':''}</div>`;
+  if(q.topic!=='both')h+=`<div class="overall">Overall, this reaction gives: ${answerText(project(q.R,'both'),'both')}</div>`;
+  if(!full)return h;
+  h+=`<ul class="why">${bullets(q).map(b=>`<li>${b}</li>`).join('')}</ul><div class="concl">${KEYS[q.R.key].t}</div>`;
+  const wn=mechOptions().filter(m=>!q.proj.set.includes(m)).map(m=>`<li><b>${mh(m,q.topic)}:</b> ${whyNot(m,q)}</li>`);
+  let also=[];
+  if(q.proj.set.length>1){
+    const missed=q.proj.set.filter(m=>!q.rec.sel.includes(m));
+    if(q.proj.set.includes('SN1')){ if(missed.length)also=[`<li><b>${SN1} and E1 together:</b> ${alsoWhy('SN1',q)}</li>`]; }
+    else also=missed.map(m=>`<li><b>${mh(m)} also occurs:</b> ${alsoWhy(m,q)}</li>`);  }
+  h+=`<details class="whynot"${q.rec.mechOk?'':' open'}><summary>Why not the others? ›</summary><ul>${also.join('')}${wn.join('')}</ul></details>`;
+  return h;
+}
+function finishMech(){
+  stopTimer();
+  Q.step='mechDone';
+  const fb=$('#fb'), quiz=SET.mode==='quiz';
+  if(!quiz){sess.n++; if(Q.rec.mechOk){sess.right++;sess.streak++;} else sess.streak=0;}
+  else if(Q.rec.mechOk)sess.points++;
+  const nextLbl=Q.prod?'Predict the product →':quiz?'How did you know? →':'Next question →';
+  fb.innerHTML=explainHTML(Q,!quiz)+`<div class="actions"><button class="primary" id="nx">${nextLbl}</button><span class="kbd">Enter</span></div>`;
+  $('#nx').onclick=afterMech; $('#nx').focus({preventScroll:true});
+  renderHeader();
+}
+function afterMech(){
+  if(Q.prod)renderProduct(); else if(SET.mode==='quiz')renderFollow(); else showQuestion();
+}
+function renderProduct(){
+  Q.step='product'; const P=Q.prod;
+  $('#hints').innerHTML='';
+  panel.innerHTML=`<div class="steph"><div class="k">Step 2 · Product</div><h2>${P.prompt}</h2><p>${P.kind==='stereo'?'Watch the stereochemistry.':'Pay attention to where the double bond forms.'}</p></div>
+    <div class="tiles">${P.opts.map((o,i)=>`<button class="tile" data-id="${o.id}"><span class="n">${i+1}</span>${o.mols.map(m=>svgMol(m,{B:o.mols.length>1?34:44})).join('<span class="plus">+</span>')}</button>`).join('')}</div>
+    <div class="actions">${SET.mode==='practice'?'<button class="secondary" id="hintBtn">Hint</button>':''}<span class="kbd">keys 1–${P.opts.length}</span></div>
+    <div class="fb" id="fb" style="flex:0 0 auto"></div>`;
+  panel.querySelectorAll('.tile').forEach(b=>b.onclick=()=>pickProduct(b.dataset.id));
+  if($('#hintBtn'))$('#hintBtn').onclick=()=>showHint();
+}
+function pickProduct(id){
+  if(Q.step!=='product')return;
+  Q.step='prodDone'; const P=Q.prod, ok=id===P.correct; Q.rec.prodOk=ok; Q.rec.prodSel=id;
+  panel.querySelectorAll('.tile').forEach(b=>{b.disabled=true;if(b.dataset.id===P.correct)b.classList.add('ok');else if(b.dataset.id===id)b.classList.add('no');});
+  const a=panel.querySelector('.actions');if(a)a.remove();
+  const cor=P.opts.find(o=>o.id===P.correct);
+  const pb=$('#prodbox'); pb.innerHTML=cor.mols.map(m=>svgMol(m,{B:cor.mols.length>1?30:42})).join('<span class="plus" style="font-size:1.2rem;padding:0 4px">+</span>'); pb.classList.add('filled');
+  if(SET.mode==='quiz'&&ok)sess.points++;
+  const quiz=SET.mode==='quiz';
+  $('#fb').innerHTML=`<div class="verdict ${ok?'good':'bad'}"><span class="v">${ok?'✓ Correct':'✗ Not quite'}</span></div>${quiz?'':`<div class="concl">${P.ex}</div>`}
+    <div class="actions"><button class="primary" id="nx">${quiz?'How did you know? →':'Next question →'}</button><span class="kbd">Enter</span></div>`;
+  $('#nx').onclick=()=>quiz?renderFollow():showQuestion(); $('#nx').focus({preventScroll:true});
+  renderHeader();
+}
+function renderFollow(){
+  Q.step='follow';
+  panel.innerHTML=`<div class="steph"><div class="k">Follow-up · Reasoning</div><h2>How could you tell?</h2><p>Correct answer: ${answerText(Q.proj,Q.topic)}. Which statement correctly explains <i>this</i> reaction?</p></div>
+    <div class="opts one">${Q.follow.map((o,i)=>`<button class="opt txt" data-i="${i}"><span class="n">${i+1}</span><span class="t">${o.t}</span></button>`).join('')}</div>
+    <div class="fb" id="fb"></div>`;
+  panel.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pickFollow(+b.dataset.i));
+}
+function pickFollow(i){
+  if(Q.step!=='follow')return;
+  Q.step='done'; const ok=Q.follow[i].ok; Q.rec.followOk=ok; if(ok)sess.points++;
+  panel.querySelectorAll('.opt').forEach((b,j)=>{b.disabled=true;if(Q.follow[j].ok)b.classList.add('ok');else if(j===i)b.classList.add('no');});
+  sess.hist.push(Q);
+  const last=sess.idx+1>=QUIZ_LEN;
+  $('#fb').innerHTML=`<div class="verdict ${ok?'good':'bad'}"><span class="v">${ok?'✓ Right reasoning':'✗ Not the right reasoning for this reaction'}</span></div>
+    <div class="actions"><button class="primary" id="nx">${last?'See results →':'Next question →'}</button><span class="kbd">Enter</span></div>`;
+  $('#nx').onclick=()=>{if(last)showResults();else{sess.idx++;showQuestion();}};
+  $('#nx').focus({preventScroll:true});
+  renderHeader();
+}
+
+/* ---------- timer ---------- */
+function startTimer(){
+  stopTimer(); Q.left=QUIZ_SECS; Q.t0=Date.now();
+  const bar=$('#tbar i'); bar.style.transition='none'; bar.style.width='100%'; bar.style.background='var(--accent)';
+  requestAnimationFrame(()=>{bar.style.transition='';});
+  timerId=setInterval(()=>{
+    Q.left--; const el=$('#timer');
+    if(el){el.textContent=Q.left+'s';el.className='timer'+(Q.left<=5?' crit':Q.left<=15?' low':'');}
+    bar.style.width=(Q.left/QUIZ_SECS*100)+'%';
+    bar.style.background=Q.left<=5?'var(--bad)':Q.left<=15?'var(--warn)':'var(--accent)';
+    if(Q.left<=0){stopTimer(); if(Q.step==='mech')submitMech(true); else if(Q.step==='major')pickMajor(null,true);}
+  },1000);
+}
+function stopTimer(){
+  if(timerId){clearInterval(timerId);timerId=null;if(Q&&Q.t0)Q.rec.time=Math.min(QUIZ_SECS,Math.round((Date.now()-Q.t0)/1000));}
+}
+
+/* =====================================================================
+   9. MENU & RESULTS
+   ===================================================================== */
+const ov=$('#overlay');
+function segHTML(name,items){
+  return `<div class="seg" data-f="${name}">${items.map(([v,b,s])=>`<button data-v="${v}" class="${String(SET[name])===String(v)?'on':''}"><b>${b}</b><span>${s}</span></button>`).join('')}</div>`;
+}
+function showMenu(){
+  stopTimer(); sess=null; renderHeader();
+  const n=buildBank(SET).length;
+  ov.innerHTML=`<div class="card menu">
+    <div><h1>S<sub>N</sub>1 · S<sub>N</sub>2 · E1 · E2 <b>Trainer</b></h1><p class="lead">Look at the substrate and conditions, then decide which pathway(s) occur.</p></div>
+    <div class="field"><label>Mode</label>${segHTML('mode',[['practice','Practice','Untimed, with hints and an explanation after every answer'],['quiz','Quiz',`${QUIZ_LEN} questions, ${QUIZ_SECS} s each, no hints, plus a “how did you know?” follow-up`]])}</div>
+    <div class="field"><label>Reactions tested</label>${segHTML('topic',[['sub','Substitution','S<sub>N</sub>1 vs S<sub>N</sub>2'],['elim','Elimination','E1 vs E2'],['both','Both','All four pathways']])}</div>
+    <div class="field"><label>Difficulty</label>${segHTML('tier',[[1,'Intro','Clear-cut cases: methyl/1° S<sub>N</sub>2, bulky bases, 3° substrates'],[2,'Standard','Adds 2° substrates, tosylates, alcohols, stereochemistry, Zaitsev/Hofmann'],[3,'Exam','Adds no-reaction traps: vinyl/aryl, fluorides, –OH without acid']])}</div>
+    <div class="foot"><button class="primary" id="start">Start ${SET.mode==='quiz'?'quiz':'practicing'} →</button><span class="note"><b>${n}</b> distinct questions in this set.<br>Scope: methyl, 1°, 2°, 3° and sp² carbons; no allylic/benzylic substrates, rearrangements or neopentyl.</span></div>
+  </div>`;
+  ov.hidden=false;
+  ov.querySelectorAll('.seg').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    const f=seg.dataset.f; SET[f]=f==='tier'?+b.dataset.v:b.dataset.v; store.set('settings',SET); showMenu();
+  }));
+  $('#start').onclick=start; $('#start').focus({preventScroll:true});
+}
+function start(){
+  prepare();
+  sess={mode:SET.mode,idx:0,n:0,right:0,streak:0,points:0,used:new Set(),subs:new Set(),hist:[],lastSub:null,lastAns:null};
+  ov.hidden=true; showQuestion();
+}
+function ringSVG(p){
+  const r=46,c=2*Math.PI*r;
+  return `<svg class="ring" viewBox="0 0 110 110"><circle cx="55" cy="55" r="${r}" fill="none" stroke="var(--soft)" stroke-width="10"/>
+    <circle cx="55" cy="55" r="${r}" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${f1(c*p)} ${f1(c)}" transform="rotate(-90 55 55)"/>
+    <text x="55" y="62" text-anchor="middle" font-size="22" font-weight="700" fill="currentColor">${Math.round(p*100)}%</text></svg>`;
+}
+function showResults(){
+  const H=sess.hist, mech=H.filter(q=>q.rec.mechOk).length, prods=H.filter(q=>q.prod), pr=prods.filter(q=>q.rec.prodOk).length,
+    fol=H.filter(q=>q.rec.followOk).length, total=H.length*2+prods.length, pts=mech+pr+fol,
+    avg=Math.round(H.reduce((a,q)=>a+q.rec.time,0)/H.length);
+  const cat={};
+  const add=(c,ok)=>{cat[c]=cat[c]||[0,0];cat[c][1]++;if(ok)cat[c][0]++;};
+  H.forEach(q=>{add(KEYS[q.R.key].c,q.rec.mechOk); if(q.prod)add(q.prod.kind==='stereo'?'Stereochemistry':'Zaitsev / Hofmann',q.rec.prodOk);});
+  const msg=pts/total>=.9?'Excellent work!':pts/total>=.7?'Solid — review the misses.':pts/total>=.5?'Getting there.':'Keep practicing.';
+  const dot=v=>v==null?'<span class="dot na">–</span>':v?'<span class="dot y">✓</span>':'<span class="dot x">✗</span>';
+  ov.innerHTML=`<div class="results">
+    <div class="card rs">
+      <div class="big">${ringSVG(pts/total)}<div><h2>${msg}</h2><p>${pts} of ${total} points · avg ${avg}s per question</p></div></div>
+      <div class="trio"><div><b>${mech}/${H.length}</b><span>Mechanisms</span></div><div><b>${prods.length?pr+'/'+prods.length:'–'}</b><span>Products</span></div><div><b>${fol}/${H.length}</b><span>Reasoning</span></div></div>
+      <div class="bars"><h3>By concept</h3>${Object.entries(cat).map(([k,[a,b]])=>`<div class="bar"><span>${k}</span><span class="c">${a}/${b}</span><div class="track"><i style="width:${a/b*100}%"></i></div></div>`).join('')}</div>
+      <div class="actions" style="margin-top:auto"><button class="primary" id="again">Try another quiz</button><button class="secondary" id="menu2">Menu</button></div>
+    </div>
+    <div class="card rl" id="rl"></div>
+  </div>`;
+  const list=()=>{
+    $('#rl').innerHTML=`<h3>Review · tap a question to see the explanation</h3><div class="rows">${H.map((q,i)=>`<button class="row" data-i="${i}"><span class="i">${i+1}</span><span class="q">${q.s.name} + ${q.r.f} <small>→ ${answerText(q.proj,q.topic).replace(/<em>|<\/em>/g,'')}</small></span><span class="m">${dot(q.rec.mechOk)}${dot(q.prod?q.rec.prodOk:null)}${dot(q.rec.followOk)}</span></button>`).join('')}</div>
+      <div class="legend">Columns: mechanism · product · reasoning</div>`;
+    $('#rl').querySelectorAll('.row').forEach(b=>b.onclick=()=>detail(+b.dataset.i));
+  };
+  const detail=i=>{
+    const q=H[i];
+    let ph='';
+    if(q.prod){const c=q.prod.opts.find(o=>o.id===q.prod.correct);ph=`<div class="concl"><b>Product:</b> ${q.prod.ex}</div>`;}
+    $('#rl').innerHTML=`<div class="actions"><button class="secondary" id="back">← All questions</button><span class="kbd">Question ${i+1}</span></div>
+      <div class="detail"><div class="rxn">${rxnHTML(q,34).replace('class="prodbox" id="prodbox">?','class="prodbox'+(q.prod?' filled':'')+'">'+(q.prod?q.prod.opts.find(o=>o.id===q.prod.correct).mols.map(m=>svgMol(m,{B:26})).join(' + '):'?'))}</div>
+      <div class="fb">${explainHTML(q,true)}${ph}</div></div>`;
+    $('#back').onclick=list;
+  };
+  list();
+  ov.hidden=false;
+  $('#again').onclick=start; $('#menu2').onclick=showMenu;
+}
+
+/* =====================================================================
+   10. KEYBOARD & BOOT
+   ===================================================================== */
+document.addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  if(!ov.hidden){ if(e.key==='Enter'&&$('#start')){e.preventDefault();start();} return; }
+  if(!Q)return;
+  const n=parseInt(e.key,10);
+  if(e.key==='Enter'){
+    e.preventDefault();
+    if(Q.step==='mech'&&Q.sel.size)submitMech();
+    else{const nx=$('#nx');if(nx)nx.click();}
+    return;
+  }
+  if((e.key==='h'||e.key==='H')&&$('#hintBtn')&&!$('#hintBtn').disabled){showHint();return;}
+  if(!n)return;
+  if(Q.step==='mech'){const m=mechOptions()[n-1];if(m)toggle(m);}
+  else if(Q.step==='major'){const m=Q.proj.set[n-1];if(m)pickMajor(m);}
+  else if(Q.step==='product'){const o=Q.prod.opts[n-1];if(o)pickProduct(o.id);}
+  else if(Q.step==='follow'){if(n<=Q.follow.length)pickFollow(n-1);}
+});
+$('#btnMenu').onclick=showMenu;
+showMenu();
+</script>
+</body>
+</html>
